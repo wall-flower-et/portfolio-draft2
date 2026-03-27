@@ -1,416 +1,195 @@
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
+import { projects } from '../data/projects'
+import { useReveal } from '../hooks/useReveal'
 
-/* ——— Tag pill ——— */
-function Tag({ children, color = '#000', bg = '#E2E2E2' }) {
+function MetaItem({ label, value }) {
   return (
-    <span
-      className="inline-flex items-center justify-center rounded-full font-medium font-body whitespace-nowrap"
-      style={{
-        backgroundColor: bg,
-        color: color,
-        fontSize: 'clamp(10px, 0.81vw, 14px)',
-        padding: 'clamp(4px, 0.35vw, 6px) clamp(12px, 1.04vw, 18px)',
-        lineHeight: '1.5',
-      }}
-    >
+    <div>
+      <p className="text-[12px] text-ink-tertiary uppercase tracking-wider font-mono mb-0.5">{label}</p>
+      <p className="text-[14px] text-ink">{value}</p>
+    </div>
+  )
+}
+
+function SectionLabel({ number, title }) {
+  return (
+    <div className="mb-5 md:mb-6">
+      <p className="text-[12px] text-ink-tertiary uppercase tracking-wider font-mono mb-1">{number}</p>
+      <h2 className="text-lg md:text-xl font-medium text-ink">{title}</h2>
+    </div>
+  )
+}
+
+function ImageBlock({ src, alt, aspect = 'aspect-[4/3]' }) {
+  return (
+    <div className={`${aspect} rounded-lg overflow-hidden`}>
+      <img src={src} alt={alt} className="w-full h-full object-cover" loading="lazy" />
+    </div>
+  )
+}
+
+function InsightRow({ number, text }) {
+  return (
+    <div className="flex gap-3 items-start">
+      <span className="text-[13px] text-ink-tertiary font-mono shrink-0 pt-0.5">{number}</span>
+      <p className="text-[14px] text-ink leading-relaxed">{text}</p>
+    </div>
+  )
+}
+
+function ResultCard({ metric, label, note }) {
+  return (
+    <div className="text-center py-6 border-t border-border">
+      <p className="text-2xl md:text-3xl font-medium text-ink mb-1">{metric}</p>
+      <p className="text-[14px] text-ink mb-0.5">{label}</p>
+      <p className="text-[12px] text-ink-tertiary">{note}</p>
+    </div>
+  )
+}
+
+function RevealSection({ children }) {
+  const [ref, visible] = useReveal(0.1)
+  return (
+    <section ref={ref} className={`fade-in ${visible ? 'visible' : ''}`}>
       {children}
-    </span>
+    </section>
   )
 }
 
-/* ——— Dot grid background container ——— */
-function DotSection({ children, className = '', style = {} }) {
-  return (
-    <div
-      className={`border border-border-medium rounded-lg ${className}`}
-      style={{
-        backgroundColor: '#F1EFEF',
-        backgroundImage: 'radial-gradient(circle, rgba(213, 211, 211, 0.7) 2px, transparent 2px)',
-        backgroundSize: '17.28px 17.28px',
-        padding: 'clamp(24px, 2.78vw, 48px) clamp(24px, 2.78vw, 48px)',
-        ...style,
-      }}
-    >
-      {children}
-    </div>
-  )
-}
-
-/* ——— Placeholder image block ——— */
-function PlaceholderImage({ aspect = '16 / 9', label = '' }) {
-  return (
-    <div
-      className="w-full bg-surface border border-border-medium rounded-md overflow-hidden relative"
-      style={{ aspectRatio: aspect }}
-    >
-      <div className="absolute inset-0 flex items-center justify-center">
-        <span
-          className="font-display text-primary opacity-10"
-          style={{ fontSize: 'clamp(24px, 2.78vw, 48px)' }}
-        >
-          {label}
-        </span>
-      </div>
-    </div>
-  )
-}
-
-/* ——— Section heading with folder icon ——— */
-function SectionHeading({ title, subtitle }) {
-  return (
-    <div style={{ marginBottom: 'clamp(24px, 2.78vw, 48px)' }}>
-      <h2
-        className="font-medium font-body text-primary"
-        style={{
-          fontSize: 'clamp(18px, 1.63vw, 28px)',
-          lineHeight: '1.33',
-          letterSpacing: '-1px',
-        }}
-      >
-        {title}
-      </h2>
-      {subtitle && (
-        <p
-          className="font-medium font-body text-secondary"
-          style={{
-            fontSize: 'clamp(12px, 1.05vw, 18px)',
-            lineHeight: '1.33',
-            letterSpacing: '-0.5px',
-          }}
-        >
-          {subtitle}
-        </p>
-      )}
-    </div>
-  )
-}
-
-/* ——— Nav pill (Next/Previous) ——— */
-function NavButton({ children, onClick, align = 'left' }) {
-  return (
-    <div
-      className="bg-surface rounded-md shadow-nav flex items-center justify-center"
-      style={{
-        height: 'clamp(42px, 3.83vw, 66px)',
-        padding: 'clamp(5px, 0.47vw, 8px)',
-      }}
-    >
-      <button
-        className="bg-control rounded-sm shadow-pill font-medium font-body text-primary whitespace-nowrap flex items-center w-full h-full"
-        style={{
-          padding: 'clamp(8px, 0.75vw, 13px) clamp(14px, 1.40vw, 24px)',
-          fontSize: 'clamp(12px, 0.93vw, 16px)',
-          lineHeight: '1.5',
-          justifyContent: align === 'right' ? 'flex-end' : 'flex-start',
-        }}
-        onClick={onClick}
-      >
-        {children}
-      </button>
-    </div>
-  )
-}
-
-/* ——— Left Sidebar ——— */
-function Sidebar({ slug }) {
-  const navigate = useNavigate()
-
-  return (
-    <div
-      className="shrink-0 sticky flex flex-col"
-      style={{
-        width: 'clamp(240px, 23.60vw, 406px)',
-        top: 'clamp(24px, 2.95vw, 51px)',
-        gap: 'clamp(10px, 0.93vw, 16px)',
-        alignSelf: 'flex-start',
-      }}
-    >
-      {/* Overview card */}
-      <DotSection style={{ padding: 'clamp(20px, 1.86vw, 32px)' }}>
-        <h1
-          className="font-medium font-body text-primary"
-          style={{
-            fontSize: 'clamp(20px, 1.86vw, 32px)',
-            lineHeight: '1.33',
-            letterSpacing: '-1px',
-            marginBottom: 'clamp(16px, 1.86vw, 32px)',
-          }}
-        >
-          Project Name
-        </h1>
-        <p
-          className="font-medium font-body text-secondary"
-          style={{
-            fontSize: 'clamp(12px, 0.93vw, 16px)',
-            lineHeight: '1.33',
-            letterSpacing: '-1px',
-            marginBottom: 'clamp(20px, 1.86vw, 32px)',
-          }}
-        >
-          Project Description short
-        </p>
-
-        <div className="flex flex-col" style={{ gap: 'clamp(20px, 1.86vw, 32px)' }}>
-          {[
-            { label: 'Role', value: 'Lead Designer' },
-            { label: 'Duration', value: '8 Weeks' },
-            { label: 'Team', value: '3 People' },
-            { label: 'Tools', value: 'Figma, Maze, Miro' },
-          ].map(({ label, value }) => (
-            <div key={label}>
-              <p
-                className="font-medium font-body text-secondary"
-                style={{
-                  fontSize: 'clamp(10px, 0.81vw, 14px)',
-                  lineHeight: '1.5',
-                  textTransform: 'uppercase',
-                  letterSpacing: '1px',
-                  marginBottom: 'clamp(4px, 0.46vw, 8px)',
-                }}
-              >
-                {label}
-              </p>
-              <p
-                className="font-medium font-body text-primary"
-                style={{
-                  fontSize: 'clamp(16px, 1.39vw, 24px)',
-                  lineHeight: '1.33',
-                  letterSpacing: '-0.5px',
-                }}
-              >
-                {value}
-              </p>
-            </div>
-          ))}
-        </div>
-      </DotSection>
-
-      {/* Next / Previous buttons */}
-      <NavButton align="right">Next: Project Name &rarr;</NavButton>
-      <NavButton onClick={() => navigate('/')}>&larr; Previous: Project Name</NavButton>
-    </div>
-  )
-}
-
-/* ——— Project Page ——— */
 export default function ProjectPage() {
   const { slug } = useParams()
+  const navigate = useNavigate()
+  const project = projects.find((p) => p.slug === slug)
+  const currentIndex = projects.findIndex((p) => p.slug === slug)
+  const prevProject = projects[(currentIndex - 1 + projects.length) % projects.length]
+  const nextProject = projects[(currentIndex + 1) % projects.length]
+
+  if (!project) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-6">
+        <div className="text-center">
+          <h1 className="text-lg font-medium text-ink mb-3">Project not found</h1>
+          <Link to="/" className="text-[13px] text-ink-secondary hover:text-ink transition-colors">&larr; Back home</Link>
+        </div>
+      </div>
+    )
+  }
+
+  const { sections, meta } = project
 
   return (
-    <div
-      className="flex items-start"
-      style={{
-        gap: 'clamp(12px, 1.05vw, 18px)',
-        paddingTop: 'clamp(24px, 2.78vw, 48px)',
-      }}
-    >
-      {/* Left sticky sidebar */}
-      <Sidebar slug={slug} />
+    <div className="pt-20 md:pt-24 pb-16 md:pb-24 max-w-4xl mx-auto px-6">
+      <Link to="/" className="inline-flex items-center gap-1 text-[13px] text-ink-secondary hover:text-ink transition-colors py-2 -my-2 mb-8">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
+        All projects
+      </Link>
 
-      {/* Right scrollable content */}
-      <div className="flex-1 flex flex-col" style={{ gap: 'clamp(48px, 5.56vw, 96px)' }}>
+      <div className="mb-10 md:mb-12">
+        <h1 className="text-2xl md:text-3xl font-medium text-ink mb-2">{project.title}</h1>
+        <p className="text-[15px] text-ink-secondary mb-6">{project.subtitle}</p>
+        <div className="flex flex-wrap gap-x-8 gap-y-3">
+          <MetaItem label="Role" value={meta.role} />
+          <MetaItem label="Duration" value={meta.duration} />
+          <MetaItem label="Team" value={meta.team} />
+          <MetaItem label="Tools" value={meta.tools} />
+        </div>
+      </div>
 
-        {/* Hero Image */}
-        <PlaceholderImage aspect="1247 / 781" label="HERO" />
+      <div className="mb-16 md:mb-20">
+        <ImageBlock src={project.hero} alt={`${project.title} — overview`} aspect="aspect-video" />
+      </div>
 
-        {/* The Problem */}
-        <section>
-          <SectionHeading title="The Problem" subtitle="What needed fixing and why it mattered" />
-          <div className="flex" style={{ gap: 'clamp(24px, 2.78vw, 48px)' }}>
-            <div style={{ flex: 1 }}>
-              <p
-                className="font-medium font-body text-primary"
-                style={{
-                  fontSize: 'clamp(14px, 1.28vw, 22px)',
-                  lineHeight: '1.8',
-                  letterSpacing: '-0.5px',
-                }}
-              >
-                Existing support systems treated every ticket the same — a blank form
-                with no context. Users had to re-explain issues, navigate confusing
-                category trees, and wait without knowing what was happening.
-              </p>
-              <br />
-              <p
-                className="font-medium font-body text-secondary"
-                style={{
-                  fontSize: 'clamp(12px, 1.05vw, 18px)',
-                  lineHeight: '1.6',
-                  letterSpacing: '-0.5px',
-                }}
-              >
-                Completion rates were low, average resolution time was high,
-                and user satisfaction scores reflected the pain.
-              </p>
-            </div>
-            <div style={{ flex: 1 }}>
-              <PlaceholderImage aspect="4 / 3" label="BEFORE" />
+      <div className="flex flex-col gap-16 md:gap-20">
+        <RevealSection>
+          <SectionLabel number="01" title="The Problem" />
+          <div className="flex flex-col md:flex-row gap-6 md:gap-8">
+            <p className="flex-1 text-[15px] text-ink leading-relaxed">{sections.problem.text}</p>
+            <div className="flex-1">
+              <ImageBlock src={sections.problem.image} alt={`${project.title} — problem context`} />
             </div>
           </div>
-        </section>
+        </RevealSection>
 
-        {/* Research */}
-        <section>
-          <SectionHeading title="Research" subtitle="Listening before designing" />
-          <div
-            className="grid grid-cols-3"
-            style={{ gap: 'clamp(12px, 1.39vw, 24px)', marginBottom: 'clamp(24px, 2.78vw, 48px)' }}
-          >
-            <PlaceholderImage aspect="1 / 1" label="INTERVIEWS" />
-            <PlaceholderImage aspect="1 / 1" label="AFFINITY MAP" />
-            <PlaceholderImage aspect="1 / 1" label="JOURNEY MAP" />
+        <RevealSection>
+          <SectionLabel number="02" title="Research" />
+          <p className="text-[15px] text-ink leading-relaxed mb-8">{sections.research.text}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+            {sections.research.images.map((img, i) => (
+              <ImageBlock key={i} src={img} alt={`${project.title} — research artifact ${i + 1}`} />
+            ))}
           </div>
-          <DotSection>
-            <h3
-              className="font-medium font-body text-primary"
-              style={{
-                fontSize: 'clamp(16px, 1.39vw, 24px)',
-                lineHeight: '1.33',
-                letterSpacing: '-0.5px',
-                marginBottom: 'clamp(12px, 1.39vw, 24px)',
-              }}
-            >
-              Key Insights
-            </h3>
-            <div className="flex flex-col" style={{ gap: 'clamp(12px, 1.39vw, 24px)' }}>
-              {[
-                { num: '01', text: 'Users abandon tickets when they can\'t estimate resolution time — uncertainty breeds frustration.' },
-                { num: '02', text: 'Most issues fall into 4 patterns, but users don\'t know that. Guided paths reduce cognitive load.' },
-                { num: '03', text: 'Tone matters as much as function — a warm, conversational UI reduces perceived effort by 40%.' },
-              ].map(({ num, text }) => (
-                <div key={num} className="flex items-start" style={{ gap: 'clamp(8px, 1.05vw, 18px)' }}>
-                  <span
-                    className="font-display text-primary shrink-0"
-                    style={{ fontSize: 'clamp(20px, 2.33vw, 40px)', lineHeight: '1', opacity: 0.2 }}
-                  >
-                    {num}
-                  </span>
-                  <p
-                    className="font-medium font-body text-primary"
-                    style={{ fontSize: 'clamp(12px, 1.05vw, 18px)', lineHeight: '1.6', letterSpacing: '-0.5px' }}
-                  >
-                    {text}
-                  </p>
-                </div>
+          <div className="border-t border-border pt-8">
+            <h3 className="text-[15px] font-medium text-ink mb-5">Key Insights</h3>
+            <div className="flex flex-col gap-4">
+              {sections.research.insights.map((insight, i) => (
+                <InsightRow key={i} number={String(i + 1).padStart(2, '0')} text={insight} />
               ))}
             </div>
-          </DotSection>
-        </section>
-
-        {/* Design Process */}
-        <section>
-          <SectionHeading title="Design Process" subtitle="From sketches to screens" />
-          <div
-            className="grid grid-cols-2"
-            style={{ gap: 'clamp(12px, 1.39vw, 24px)', marginBottom: 'clamp(24px, 2.78vw, 48px)' }}
-          >
-            <PlaceholderImage aspect="4 / 3" label="SKETCHES" />
-            <PlaceholderImage aspect="4 / 3" label="WIREFRAMES" />
           </div>
-          <div className="flex" style={{ gap: 'clamp(24px, 2.78vw, 48px)' }}>
-            <p className="flex-1 font-medium font-body text-primary" style={{ fontSize: 'clamp(14px, 1.28vw, 22px)', lineHeight: '1.8', letterSpacing: '-0.5px' }}>
-              The core idea: replace the blank form with a guided flow that adapts
-              based on user input. Each step narrows the problem space and shows
-              an estimated timeline.
-            </p>
-            <p className="flex-1 font-medium font-body text-secondary" style={{ fontSize: 'clamp(12px, 1.05vw, 18px)', lineHeight: '1.6', letterSpacing: '-0.5px' }}>
-              I started with paper sketches to explore flow structures,
-              then moved to low-fi wireframes in Figma. Testing early flows with
-              5 users confirmed the conversational framing.
-            </p>
-          </div>
-        </section>
+        </RevealSection>
 
-        {/* Design Decisions */}
-        <section>
-          <SectionHeading title="Design Decisions" subtitle="The choices that shaped the outcome" />
-          <div className="flex flex-col" style={{ gap: 'clamp(24px, 2.78vw, 48px)' }}>
-            {[
-              { title: 'Conversational flow over static forms', body: 'The ticket system presents one question at a time in a chat-like format, reducing visual clutter.', label: 'FLOW' },
-              { title: 'Contextual help that doesn\'t interrupt', body: 'Relevant help articles appear alongside — not in a popup. This resolved 23% of issues before submission.', label: 'CONTEXT' },
-              { title: 'Transparent timeline from the start', body: 'Every ticket shows an estimated resolution time. This improved satisfaction scores by 31%.', label: 'TIMELINE' },
-            ].map(({ title, body, label }, i) => (
-              <div
-                key={i}
-                className="flex items-center"
-                style={{ gap: 'clamp(24px, 2.78vw, 48px)', flexDirection: i % 2 === 0 ? 'row' : 'row-reverse' }}
-              >
-                <div style={{ flex: 1 }}>
-                  <h3 className="font-medium font-body text-primary" style={{ fontSize: 'clamp(16px, 1.39vw, 24px)', lineHeight: '1.33', letterSpacing: '-0.5px', marginBottom: 'clamp(8px, 1.05vw, 18px)' }}>
-                    {title}
-                  </h3>
-                  <p className="font-medium font-body text-secondary" style={{ fontSize: 'clamp(12px, 1.05vw, 18px)', lineHeight: '1.6', letterSpacing: '-0.5px' }}>
-                    {body}
-                  </p>
-                </div>
-                <div style={{ flex: 1 }}>
-                  <PlaceholderImage aspect="4 / 3" label={label} />
-                </div>
+        <RevealSection>
+          <SectionLabel number="03" title="Design Process" />
+          <p className="text-[15px] text-ink leading-relaxed mb-8">{sections.process.text}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {sections.process.images.map((img, i) => (
+              <ImageBlock key={i} src={img} alt={`${project.title} — process ${i + 1}`} />
+            ))}
+          </div>
+        </RevealSection>
+
+        <RevealSection>
+          <SectionLabel number="04" title="Design Decisions" />
+          <div className="flex flex-col gap-0">
+            {sections.decisions.map((d, i) => (
+              <div key={i} className="border-t border-border py-5">
+                <h3 className="text-[15px] font-medium text-ink mb-1.5">{d.title}</h3>
+                <p className="text-[13px] text-ink-secondary leading-relaxed">{d.text}</p>
               </div>
             ))}
           </div>
-        </section>
+        </RevealSection>
 
-        {/* Final Design */}
-        <section>
-          <SectionHeading title="Final Design" subtitle="The polished result" />
-          <div style={{ marginBottom: 'clamp(24px, 2.78vw, 48px)' }}>
-            <PlaceholderImage aspect="16 / 9" label="FINAL — OVERVIEW" />
+        <RevealSection>
+          <SectionLabel number="05" title="Final Design" />
+          <div className="mb-5">
+            <ImageBlock src={sections.final.hero} alt={`${project.title} — final overview`} aspect="aspect-video" />
           </div>
-          <div className="grid grid-cols-2" style={{ gap: 'clamp(12px, 1.39vw, 24px)', marginBottom: 'clamp(24px, 2.78vw, 48px)' }}>
-            <PlaceholderImage aspect="9 / 16" label="MOBILE" />
-            <PlaceholderImage aspect="9 / 16" label="MOBILE" />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {sections.final.screens.map((img, i) => (
+              <ImageBlock key={i} src={img} alt={`${project.title} — screen ${i + 1}`} aspect="aspect-[3/4]" />
+            ))}
           </div>
-          <div className="grid grid-cols-3" style={{ gap: 'clamp(12px, 1.39vw, 24px)' }}>
-            <PlaceholderImage aspect="4 / 3" label="SCREEN 01" />
-            <PlaceholderImage aspect="4 / 3" label="SCREEN 02" />
-            <PlaceholderImage aspect="4 / 3" label="SCREEN 03" />
-          </div>
-        </section>
+        </RevealSection>
 
-        {/* Results */}
-        <section>
-          <DotSection>
-            <SectionHeading title="Results" subtitle="What changed after launch" />
-            <div className="grid grid-cols-3" style={{ gap: 'clamp(16px, 2.09vw, 36px)' }}>
-              {[
-                { metric: '68%', label: 'Ticket completion rate', note: 'up from 41%' },
-                { metric: '31%', label: 'Satisfaction improvement', note: 'measured via CSAT' },
-                { metric: '2.4×', label: 'Faster resolution', note: 'avg. time to close' },
-              ].map(({ metric, label, note }) => (
-                <div key={label} className="text-center">
-                  <p className="font-display text-primary" style={{ fontSize: 'clamp(32px, 4.07vw, 70px)', lineHeight: '1', marginBottom: 'clamp(6px, 0.70vw, 12px)' }}>
-                    {metric}
-                  </p>
-                  <p className="font-medium font-body text-primary" style={{ fontSize: 'clamp(12px, 1.05vw, 18px)', lineHeight: '1.33', letterSpacing: '-0.5px' }}>
-                    {label}
-                  </p>
-                  <p className="font-medium font-body text-secondary" style={{ fontSize: 'clamp(9px, 0.70vw, 12px)', lineHeight: '1.5' }}>
-                    {note}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </DotSection>
-        </section>
-
-        {/* Reflection */}
-        <section>
-          <SectionHeading title="Reflection" />
-          <div style={{ maxWidth: '700px' }}>
-            <p className="font-medium font-body text-primary" style={{ fontSize: 'clamp(14px, 1.28vw, 22px)', lineHeight: '1.8', letterSpacing: '-0.5px', marginBottom: 'clamp(12px, 1.39vw, 24px)' }}>
-              This project taught me that the frame around a problem matters
-              as much as the solution inside it. A ticket form and a conversation
-              can collect the same information — but one feels like work
-              and the other feels like help.
-            </p>
-            <p className="font-medium font-body text-secondary" style={{ fontSize: 'clamp(12px, 1.05vw, 18px)', lineHeight: '1.6', letterSpacing: '-0.5px' }}>
-              If I revisited this, I'd explore voice input as an entry point
-              and experiment with AI-assisted categorization to further
-              reduce the steps between "I have a problem" and "help is on the way."
-            </p>
+        <RevealSection>
+          <SectionLabel number="06" title="Results" />
+          <div className="grid grid-cols-1 sm:grid-cols-3">
+            {sections.results.map((r, i) => (
+              <ResultCard key={i} {...r} />
+            ))}
           </div>
-        </section>
+        </RevealSection>
+
+        <RevealSection>
+          <SectionLabel number="07" title="Reflection" />
+          <p className="text-[15px] text-ink leading-relaxed max-w-2xl">{sections.reflection}</p>
+        </RevealSection>
+
+        <div className="border-t border-border pt-8 flex flex-wrap justify-between gap-4">
+          <button
+            onClick={() => navigate(`/project/${prevProject.slug}`)}
+            className="text-[13px] text-ink-secondary hover:text-ink transition-colors py-2"
+          >
+            &larr; {prevProject.title}
+          </button>
+          <button
+            onClick={() => navigate(`/project/${nextProject.slug}`)}
+            className="text-[13px] text-ink-secondary hover:text-ink transition-colors py-2"
+          >
+            {nextProject.title} &rarr;
+          </button>
+        </div>
       </div>
     </div>
   )
