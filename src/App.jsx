@@ -11,6 +11,7 @@ import Carousel from './components/Carousel'
 import ProjectPage from './components/ProjectPage'
 import ExperimentsPage from './components/ExperimentsPage'
 import Admin from './components/Admin'
+import ScrollPopup from './components/ScrollPopup'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -55,6 +56,7 @@ export default function App() {
         </main>
         <Footer />
       </div>
+      <ScrollPopup />
     </div>
   )
 }
